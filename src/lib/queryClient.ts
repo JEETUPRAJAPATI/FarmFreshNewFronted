@@ -7,12 +7,37 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// API base URL - use environment variable or fallback to deployed backend
+const API_BASE = import.meta.env?.VITE_API_URL || 'https://farmfreshbackend-x7th.onrender.com';
+
 export async function apiRequest(
   url: string,
   options?: RequestInit,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Build full URL if it's a relative path
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+  
+  // Get admin token if this is an admin request
+  const isAdminRequest = url.includes('/admin/');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add existing headers if any
+  if (options?.headers) {
+    Object.assign(headers, options.headers);
+  }
+  
+  if (isAdminRequest) {
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      headers['Authorization'] = `Bearer ${adminToken}`;
+    }
+  }
+
+  const res = await fetch(fullUrl, {
     ...options,
+    headers,
     credentials: "include",
   });
 
@@ -25,7 +50,22 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const url = queryKey[0] as string;
+    // Build full URL if it's a relative path
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+    
+    const isAdminRequest = url.includes('/admin/');
+    const headers: Record<string, string> = {};
+    
+    if (isAdminRequest) {
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
+      }
+    }
+
+    const res = await fetch(fullUrl, {
+      headers,
       credentials: "include",
     });
 
