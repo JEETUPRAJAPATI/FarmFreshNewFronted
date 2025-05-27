@@ -3,12 +3,11 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-export default defineConfig({
+export default defineConfig(async () => ({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+    ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer()
@@ -23,12 +22,11 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
-  // REMOVE or FIX this line
-  // root: path.resolve(import.meta.dirname, "/"), ❌ WRONG
-  root: __dirname, // ✅ or just remove this line entirely
+  // ✅ Either remove this or use __dirname if absolutely needed
+  // root: __dirname,
 
   build: {
-    outDir: path.resolve(__dirname, "dist/public"),
+    outDir: "dist", // ✅ Recommended for Vercel
     emptyOutDir: true,
   },
-});
+}));
